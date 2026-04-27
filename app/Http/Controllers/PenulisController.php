@@ -2,64 +2,82 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\penulis;
+use App\Models\Penulis;
 use Illuminate\Http\Request;
 
 class PenulisController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Tampilkan semua penulis
      */
     public function index()
     {
-        //
+        $penulis = Penulis::latest()->get();
+        return view('penulis.index', compact('penulis'));
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Form tambah penulis
      */
     public function create()
     {
-        //
+        return view('penulis.create');
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Simpan penulis
      */
     public function store(Request $request)
     {
-        //
+        $request->validate([
+            'nama' => 'required|max:100',
+        ]);
+
+        Penulis::create($request->all());
+
+        return redirect()->route('penulis.index')
+            ->with('success', 'Penulis berhasil ditambahkan');
     }
 
     /**
-     * Display the specified resource.
+     * Detail penulis
      */
-    public function show(penulis $penulis)
+    public function show(Penulis $penulis)
     {
-        //
+        return view('penulis.show', compact('penulis'));
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Form edit
      */
-    public function edit(penulis $penulis)
+    public function edit(Penulis $penulis)
     {
-        //
+        return view('penulis.edit', compact('penulis'));
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update penulis
      */
-    public function update(Request $request, penulis $penulis)
+    public function update(Request $request, Penulis $penulis)
     {
-        //
+        $request->validate([
+            'nama' => 'required|max:100',
+        ]);
+
+        $penulis->update($request->all());
+
+        return redirect()->route('penulis.index')
+            ->with('success', 'Penulis berhasil diupdate');
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Hapus penulis
      */
-    public function destroy(penulis $penulis)
+    public function destroy(Penulis $penulis)
     {
-        //
+        $penulis->delete();
+
+        return redirect()->route('penulis.index')
+            ->with('success', 'Penulis berhasil dihapus');
     }
 }

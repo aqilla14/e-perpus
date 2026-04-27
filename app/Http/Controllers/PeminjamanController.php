@@ -2,64 +2,97 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\peminjaman;
+use App\Models\Peminjaman;
+use App\Models\Buku;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class PeminjamanController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Tampilkan data peminjaman
      */
     public function index()
     {
-        //
+        $peminjaman = Peminjaman::with(['user','buku'])->latest()->get();
+        return view('peminjaman.index', compact('peminjaman'));
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Form pinjam buku
      */
     public function create()
     {
-        //
+        $bukus = Buku::all();
+        return view('peminjaman.create', compact('bukus'));
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Simpan peminjaman
      */
     public function store(Request $request)
     {
-        //
+        $request->validate([
+            'buku_id' => 'required|exists:bukus,id',
+        ]);
+
+        // cek stok
+        $buku = Buku::findOrFail($request->buku_id);
+
+        if ($buku->stok <= 0) {
+            return back()->with('error', 'Stok buku habis');
+        }
+
+        Peminjaman::create([
+            'user_id' => Auth::id(),
+            'buku_id' => $request->buku_id,
+            'tanggal_pinjam' => now(),
+            'jatuh_tempo' => now()->addDays(7),
+            'status' => 'dipinjam',
+        ]);
+
+        // kurangi stok
+        $buku->decrement('stok');
+
+        return redirect()->route('peminjaman.index')
+            ->with('success','Buku berhasil dipinjam');
     }
 
     /**
-     * Display the specified resource.
+     * Detail peminjaman
      */
-    public function show(peminjaman $peminjaman)
+    public function show(Peminjaman $peminjaman)
     {
-        //
+        return view('peminjaman.show', compact('peminjaman'));
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Form edit (jarang dipakai)
      */
-    public function edit(peminjaman $peminjaman)
+    public function edit(Peminjaman $peminjaman)
     {
-        //
+        return view('peminjaman.edit', compact('peminjaman'));
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update peminjaman
      */
-    public function update(Request $request, peminjaman $peminjaman)
+    public function update(Request $request, Peminjaman $peminjaman)
     {
-        //
+        $peminjaman->update($request->all());
+
+        return redirect()->route('peminjaman.index')
+            ->with('success','Data peminjaman diupdate');
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Hapus peminjaman
      */
-    public function destroy(peminjaman $peminjaman)
+    public function destroy(Peminjaman $peminjaman)
     {
-        //
+        $peminjaman->delete();
+
+        return redirect()->route('peminjaman.index')
+            ->with('success','Data peminjaman dihapus');
     }
 }

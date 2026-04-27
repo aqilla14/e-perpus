@@ -2,64 +2,70 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\pengembalian;
+use App\Models\Pengembalian;
+use App\Models\Peminjaman;
 use Illuminate\Http\Request;
 
 class PengembalianController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Tampilkan data pengembalian
      */
     public function index()
     {
-        //
+        $pengembalians = Pengembalian::with('peminjaman.buku')->latest()->get();
+        return view('pengembalian.index', compact('pengembalians'));
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Proses pengembalian buku
      */
-    public function create()
+    public function store($id)
     {
-        //
+        $peminjaman = Peminjaman::with('buku')->findOrFail($id);
+
+        // hitung denda (misal 1000 per hari telat)
+        $denda = 0;
+
+        if (now()->gt($peminjaman->jatuh_tempo)) {
+            $telat = now()->diffInDays($peminjaman->jatuh_tempo);
+            $denda = $telat * 1000;
+        }
+
+        // simpan pengembalian
+        Pengembalian::create([
+            'peminjaman_id' => $peminjaman->id,
+            'tanggal_kembali' => now(),
+            'denda' => $denda,
+        ]);
+
+        // update status peminjaman
+        $peminjaman->update([
+            'status' => 'dikembalikan'
+        ]);
+
+        // kembalikan stok buku
+        $peminjaman->buku->increment('stok');
+
+        return redirect()->route('peminjaman.index')
+            ->with('success', 'Buku berhasil dikembalikan');
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Detail pengembalian
      */
-    public function store(Request $request)
+    public function show(Pengembalian $pengembalian)
     {
-        //
+        return view('pengembalian.show', compact('pengembalian'));
     }
 
     /**
-     * Display the specified resource.
+     * Hapus data (optional)
      */
-    public function show(pengembalian $pengembalian)
+    public function destroy(Pengembalian $pengembalian)
     {
-        //
-    }
+        $pengembalian->delete();
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(pengembalian $pengembalian)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, pengembalian $pengembalian)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(pengembalian $pengembalian)
-    {
-        //
+        return back()->with('success', 'Data pengembalian dihapus');
     }
 }

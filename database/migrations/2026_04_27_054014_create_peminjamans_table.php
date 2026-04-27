@@ -20,14 +20,8 @@ return new class extends Migration
             $table->foreignId('buku_id')
                 ->constrained('bukus')
                 ->cascadeOnDelete();
-
-            // tanggal pinjam
             $table->date('tanggal_pinjam');
-
-            // jatuh tempo
             $table->date('jatuh_tempo')->nullable();
-
-            // status peminjaman
             $table->enum('status', ['dipinjam','dikembalikan'])
                 ->default('dipinjam');
 

@@ -21,7 +21,6 @@ class RegisteredUserController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-
         $validated = $request->validate([
             'nama' => ['required', 'string', 'max:100'],
             'email' => ['required', 'string', 'email', 'max:100', 'unique:users,email'],
@@ -39,15 +38,12 @@ class RegisteredUserController extends Controller
 
         Auth::login($user);
 
-        return $this->redirectByRole($user->role);
-    }
+        if ($user->role === 'admin') {
+            return redirect('/admin/dashboard');
+        } elseif ($user->role === 'anggota') {
+            return redirect('/anggota/dashboard');
+        }
 
-    private function redirectByRole(string $role): RedirectResponse
-    {
-        return match ($role) {
-            'admin' => redirect('/admin/dashboard'),
-            'anggota' => redirect('/dashboard'),
-            default => redirect('/'),
-        };
+        return redirect('/anggota/dashboard');
     }
 }
